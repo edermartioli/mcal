@@ -1,0 +1,16 @@
+TEST DATA:
+
+4 HARPS spectra:
+
+- Gl105B_S1D.fits
+- Gl849_S1D.fits
+- HD79210_VIS_1D_rv.fits
+- HD79211_VIS_1D_rv.fits
+
+5 ESPaDOnS spectra:
+
+- 1524969i.fits 2M0636+4349_M4
+- 1756216p.fits GL411
+- 1794540p.fits GJ3991
+- 961361i.fits GJ229A
+- 1894920p.fits J12490273+6606366
