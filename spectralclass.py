@@ -11,6 +11,7 @@ import os
 import numpy as np
 from astropy.io import fits
 import mcallib
+from scipy import constants
 
 ########## SPECTRUM CLASS ############
 class Spectrum :
@@ -95,10 +96,13 @@ class Spectrum :
                 
                 self.instrument = 'ESPaDOnS'
                 self.object = hdu[0].header['OBJECT']
+                
+                sourceRV = mcallib.getSourceRadialVelocity(self.object)
+                
                 if hdu[0].header['INSTMODE'] == 'Polarimetry, R=65,000' :
                     # data[0],data[1] for normalized spectrum
                     # data[6],data[7] for unnormalized spectrum
-                    wltmp = hdu[0].data[0]
+                    wltmp = hdu[0].data[0]*(1.0 - sourceRV*1000.0/constants.c)
                     indices = wltmp.argsort()
                     wl = 10.0*wltmp[indices]
                     flux = (hdu[0].data[1])[indices]
@@ -106,7 +110,7 @@ class Spectrum :
                 elif hdu[0].header['INSTMODE'] == 'Spectroscopy, star+sky, R=65,000':
                     # data[0],data[1] for normalized spectrum
                     # data[7],data[8] for unnormalized spectrum
-                    wltmp = hdu[0].data[0]
+                    wltmp = hdu[0].data[0]*(1.0 - sourceRV*1000.0/constants.c)
                     indices = wltmp.argsort()
                     wl = 10.0*wltmp[indices]
                     flux = (hdu[0].data[1])[indices]
@@ -166,6 +170,9 @@ class Spectrum :
     def info(self) :
         print "**************************"
         print "Info for spectrum: ",self.filename, " Object:", self.object
+        print "Instrument:",self.instrument
+        if self.instrument == 'ESPaDOnS' :
+            print "RV=",self.heliorv,"km/s"
         print "wl0 =",self.wl[0],"A -- wlf =",self.wl[-1],"A"
         sampling = (self.wl[-1] - self.wl[0])/float(len(self.wl))
         print "sampling =",sampling," A/pixel"

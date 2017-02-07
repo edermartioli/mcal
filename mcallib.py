@@ -8,10 +8,10 @@ Laboratorio Nacional de Astrofisica, Brazil
 
 import os
 import numpy as np
-from numpy import fft
 from pylab import *
 from scipy import optimize
 from scipy import integrate
+from astroquery.simbad import Simbad
 
 ######################
 def get_fitsfilepaths(directory):
@@ -94,9 +94,9 @@ def fft_filter(y, step=0.01, samp=20):
         yfftclean: filtered data array
     """
 
-    fourier = fft.fft(y)
+    fourier = np.fft.fft(y)
     n = len(fourier)
-    freq = fft.fftfreq(n, d=step)
+    freq = np.fft.fftfreq(n, d=step)
     iy = np.zeros(n, dtype=complex)
         
     for j in xrange(n):
@@ -104,7 +104,7 @@ def fft_filter(y, step=0.01, samp=20):
             iy[j] = fourier[j]
         else:
             iy[j] = 0
-    yfftclean = np.real(fft.ifft(iy, n))
+    yfftclean = np.real(np.fft.ifft(iy, n))
     
     return yfftclean
 ######################
@@ -136,7 +136,7 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
         mask = np.where(np.logical_and(xx>=xinif[i], xx<=xendf[i]))
         
         maxlocf = mask[0][0]
-        endmaxf = mask[0][-1]
+        endmaxf = mask[0][-1] + 1
         
         maxloc_adjust = yy[maxlocf-2:maxlocf+3]
         endmax_adjust = yy[endmaxf-2:endmaxf+3]
@@ -270,6 +270,21 @@ def calculateHalphaActivity(xx,yy) :
     ha = ha_rtest*aha + bha
 
     return ha
+######################
+
+##### Retrieve source RV from Simbad ############
+def getSourceRadialVelocity(targetName) :
+    sourceRV = 0.0
+    try:
+        sourceRV = -84.69
+        #simbadObject = Simbad.query_object(targetName)
+        # Unfortunately one cannot retrieve the RV directly from simbad
+        # it must be retrieved from an specificcatalog
+        # to be done
+    except :
+        print 'Warning: Cannot find object ',targetName, ' in catalog'
+
+    return sourceRV
 ######################
 
 

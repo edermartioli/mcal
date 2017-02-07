@@ -57,6 +57,8 @@ for file in listOfStarSpectra :
     if spc.instrument == 'ESPaDOnS' :
         spc.resampling(0.01,4000,7000)
 
+    #spc.printdata()
+
     spc.equivalentWidths(verbose=options.verbose)
     
     spc.calculateTeffAndFeH(options.calibmatrix, verbose=options.verbose)
