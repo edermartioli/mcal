@@ -11,7 +11,6 @@ import numpy as np
 from pylab import *
 from scipy import optimize
 from scipy import integrate
-from astroquery.simbad import Simbad
 
 ######################
 def get_fitsfilepaths(directory):
@@ -272,17 +271,21 @@ def calculateHalphaActivity(xx,yy) :
     return ha
 ######################
 
-##### Retrieve source RV from Simbad ############
-def getSourceRadialVelocity(targetName) :
+##### Function to load Source RV from Coolsnap datasheet file
+def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroids_log.dat") :
     sourceRV = 0.0
     try:
-        sourceRV = -84.69
-        #simbadObject = Simbad.query_object(targetName)
-        # Unfortunately one cannot retrieve the RV directly from simbad
-        # it must be retrieved from an specificcatalog
-        # to be done
+        if(os.path.exists(coolsnapfile)) :
+            f = open(coolsnapfile, 'r')
+            lines = f.readlines()
+            for i in range(len(lines)) :
+                data = (lines[i].rstrip('\n')).split(',')
+                if str(data[2]).replace(" ","") == odonumber or str(data[3]).replace(" ","")==targetName:
+                    sourceRV = float(data[19])
+            f.close()
+            #print odonumber, targetName, 'sourceRV:',sourceRV
     except :
-        print 'Warning: Cannot find object ',targetName, ' in catalog'
+        print 'Error: could not load sourceRV from Coolsnap data file:',coolsnapfile, ' odonumber=',odonumber, 'targetName=',targetName
 
     return sourceRV
 ######################

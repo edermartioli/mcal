@@ -33,7 +33,7 @@ class Spectrum :
         >>> spc = Spectrum("spectrumfile.fits")
         >>> spc = Spectrum("spectrumfile.txt")
         """
-        self.heliorv = 0.0
+        self.sourceRV = 0.0
         
         self.filepath = Filename
         
@@ -61,8 +61,8 @@ class Spectrum :
             self.flux = mcallib.fft_filter(self.flux)
 
     #--- Function to load spectrum from .spc.gz (OPERA) file
-    def loadSpectrumFromSPC(self,Filename):
-        wl,rvcorr,xcorr,rawflux,rawvar,normflux,calflux = np.loadtxt(Filename, unpack=True, comments='#', skiprows=11, usecols=(4,6,7,8,9,10,11), delimiter=' ')
+    def loadSpectrumFromSPC(self,spcfilename):
+        wl,rvcorr,xcorr,rawflux,rawvar,normflux,calflux = np.loadtxt(spcfilename, unpack=True, comments='#', skiprows=11, usecols=(4,6,7,8,9,10,11), delimiter=' ')
 
         threshold = 10.0
         snr = rawflux / np.sqrt(rawvar)
@@ -84,25 +84,24 @@ class Spectrum :
     #------------
 
     #--- Function to load spectrum from .fits file
-    def loadSpectrumFromFITS(self,Filename):
+    def loadSpectrumFromFITS(self,fitsfilename):
         
         wl,flux = [],[]
-        hdu = fits.open(Filename)
+        hdu = fits.open(fitsfilename)
         
         try :
             if hdu[0].header['INSTRUME'] == 'ESPaDOnS' :
-
-                self.heliorv = mcallib.getEspaonsHelioRV(hdu[0].header)
                 
                 self.instrument = 'ESPaDOnS'
                 self.object = hdu[0].header['OBJECT']
-                
-                sourceRV = mcallib.getSourceRadialVelocity(self.object)
+
+                odonumber = self.id[0:-1]
+                self.sourceRV = mcallib.getSourceRadialVelocity(odonumber=odonumber,targetName=self.object)
                 
                 if hdu[0].header['INSTMODE'] == 'Polarimetry, R=65,000' :
                     # data[0],data[1] for normalized spectrum
                     # data[6],data[7] for unnormalized spectrum
-                    wltmp = hdu[0].data[0]*(1.0 - sourceRV*1000.0/constants.c)
+                    wltmp = hdu[0].data[0]*(1.0 - self.sourceRV*1000.0/constants.c)
                     indices = wltmp.argsort()
                     wl = 10.0*wltmp[indices]
                     flux = (hdu[0].data[1])[indices]
@@ -110,7 +109,7 @@ class Spectrum :
                 elif hdu[0].header['INSTMODE'] == 'Spectroscopy, star+sky, R=65,000':
                     # data[0],data[1] for normalized spectrum
                     # data[7],data[8] for unnormalized spectrum
-                    wltmp = hdu[0].data[0]*(1.0 - sourceRV*1000.0/constants.c)
+                    wltmp = hdu[0].data[0]*(1.0 - self.sourceRV*1000.0/constants.c)
                     indices = wltmp.argsort()
                     wl = 10.0*wltmp[indices]
                     flux = (hdu[0].data[1])[indices]
@@ -128,8 +127,8 @@ class Spectrum :
     #------------
 
     #--- Function to load spectrum from .txt file
-    def loadSpectrumFromTXT(self,Filename):
-        x,y = np.loadtxt(Filename, unpack=True, comments='#',usecols=(0,1),skiprows=0, delimiter=' ')
+    def loadSpectrumFromTXT(self,txtfilename):
+        x,y = np.loadtxt(txtfilename, unpack=True, comments='#',usecols=(0,1),skiprows=0, delimiter=' ')
         return x,y
     #------------
 
@@ -172,7 +171,7 @@ class Spectrum :
         print "Info for spectrum: ",self.filename, " Object:", self.object
         print "Instrument:",self.instrument
         if self.instrument == 'ESPaDOnS' :
-            print "RV=",self.heliorv,"km/s"
+            print "Source RV =",self.sourceRV,"km/s"
         print "wl0 =",self.wl[0],"A -- wlf =",self.wl[-1],"A"
         sampling = (self.wl[-1] - self.wl[0])/float(len(self.wl))
         print "sampling =",sampling," A/pixel"
@@ -202,6 +201,4 @@ class Spectrum :
             else :
                 print 'No significant Halpha emission'
     #------------
-
-
 

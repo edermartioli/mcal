@@ -31,7 +31,7 @@ from spectralclass import Spectrum
 
 parser = OptionParser()
 parser.add_option("-i", "--datadir", dest="datadir", help="Data directory",type='string',default="")
-parser.add_option("-c", "--calibmatrix", dest="calibmatrix", help="Calibration matrix",type='string',default="")
+parser.add_option("-c", "--calibmatrix", dest="calibmatrix", help="Calibration matrix",type='string',default="coef_calvb12.npz")
 parser.add_option("-f", action="store_true", dest="fft", help="activate FFT filtering",default=False)
 parser.add_option("-v", action="store_true", dest="verbose", help="verbose",default=False)
 
@@ -46,9 +46,9 @@ if options.verbose:
 
 listOfStarSpectra = mcallib.get_fitsfilepaths(options.datadir)
 
-print "---------------------------------------------"
-print "File","Object","[Fe/H]","e[Fe/H]","Teff","eTeff","H-alpha"
-print "---------------------------------------------"
+print "--------------------------------------------------"
+print "File","Object","[Fe/H]","e[Fe/H]","Teff","eTeff","H-alpha", "RV(km/s)"
+print "--------------------------------------------------"
 
 for file in listOfStarSpectra :
 
@@ -56,8 +56,6 @@ for file in listOfStarSpectra :
     
     if spc.instrument == 'ESPaDOnS' :
         spc.resampling(0.01,4000,7000)
-
-    #spc.printdata()
 
     spc.equivalentWidths(verbose=options.verbose)
     
@@ -68,4 +66,4 @@ for file in listOfStarSpectra :
     #spc.info()
     #spc.printdata()
 
-    print spc.filename, spc.object, round(spc.FeH,3), round(spc.eFeH,3), int(round(spc.Teff,0)), int(round(spc.eTeff,0)), round(spc.halpha,2)
+    print spc.filename, spc.object, round(spc.FeH,3), round(spc.eFeH,3), int(round(spc.Teff,0)), int(round(spc.eTeff,0)), round(spc.halpha,2), round(spc.sourceRV,2)
