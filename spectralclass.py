@@ -58,6 +58,8 @@ class Spectrum :
             exit()
 
         if FFT :
+            # Throw away last point, so it doesn't hang (at least not on test data)
+            self.wl = self.wl[0:-2]; self.flux = self.flux[0:-2]
             self.flux = mcallib.fft_filter(self.flux)
 
     #--- Function to load spectrum from .spc.gz (OPERA) file

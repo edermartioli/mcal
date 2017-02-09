@@ -58,7 +58,7 @@ for file in listOfStarSpectra :
         spc.resampling(0.01,4000,7000)
 
     spc.equivalentWidths(override=True,verbose=options.verbose)
-    
+
     spc.calculateTeffAndFeH(options.calibmatrix, verbose=options.verbose)
 
     spc.halphaActivity(verbose=options.verbose)

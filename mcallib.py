@@ -97,9 +97,10 @@ def fft_filter(y, step=0.01, samp=20):
     n = len(fourier)
     freq = np.fft.fftfreq(n, d=step)
     iy = np.zeros(n, dtype=complex)
-        
+    
+    
     for j in xrange(n):
-        if -samp < freq[j] and freq[j] < samp:
+        if -samp < freq[j] < samp:
             iy[j] = fourier[j]
         else:
             iy[j] = 0
@@ -129,30 +130,61 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
     xinif, xendf = np.loadtxt(inputlinelist, unpack=True, delimiter='\t',usecols=(0,1),dtype='float',skiprows=2)
     
     eqwidths = []
-    
-    for i in range(len(xinif)) :
 
-        mask = np.where(np.logical_and(xx>=xinif[i], xx<=xendf[i]))
+
+    for i in range(len(xinif)) :
         
+        mask = np.where(np.logical_and(xx>=xinif[i], xx<=xendf[i]))
+
         maxlocf = mask[0][0]
         endmaxf = mask[0][-1] + 1
+        
+        if (maxlocf-2 < 0) or (endmaxf+3 > len(xx)) :
+            print "WARNING 1: index out of range! Setting EQ=NaN"
+            eqwidths.append('nan')
+            continue
         
         maxloc_adjust = yy[maxlocf-2:maxlocf+3]
         endmax_adjust = yy[endmaxf-2:endmaxf+3]
         
-        ind_temp = max(find(maxloc_adjust == max(maxloc_adjust)))
-        maxlocfs = int(maxlocf + ind_temp - 2)
-        ind_temp = min(find(endmax_adjust == max(endmax_adjust)))
-        ind_endmax = int(endmaxf+ind_temp-2)
+        xmaxloc = xx[maxlocf-2:maxlocf+3]
+        xendmax = xx[endmaxf-2:endmaxf+3]
         
-        endmaxfs = ind_endmax
+        """
+        for j in range(len(xmaxloc)) :
+            print i, j, xmaxloc[j], maxloc_adjust[j]
+
+        for j in range(len(xendmax)) :
+            print i, j, xendmax[j], endmax_adjust[j]
+        """
+        
+        locmaxmask = np.where(maxloc_adjust == max(maxloc_adjust))
+        #ind_temp_max = max(find(maxloc_adjust == max(maxloc_adjust)))
+        ind_temp_max = locmaxmask[0][0]
+        maxlocfs = int(maxlocf + ind_temp_max - 2)
+
+        locendmask = np.where(endmax_adjust == max(endmax_adjust))
+        #ind_temp_end = min(find(endmax_adjust == max(endmax_adjust)))
+        ind_temp_end = locendmask[0][0]
+        endmaxfs = int(endmaxf + ind_temp_end - 2)
+        
+        if (maxlocfs < 0) or (maxlocfs > len(xx)) or  (endmaxfs < 0) or (endmaxfs > len(xx)) :
+            print "WARNING 2: index out of range! Setting EQ=NaN"
+            eqwidths.append('nan')
+            continue
+
         yinit = yy[maxlocfs]
         yendt = yy[endmaxfs]
         
         yit = yy[maxlocfs:endmaxfs+1]  # nao normalizado
         xint = xx[maxlocfs:endmaxfs+1]
 
-        tam = yit.size
+        tam = len(yit)
+
+        if tam < 5 :
+            print "WARNING 3: index out of range! Setting EQ=NaN"
+            eqwidths.append('nan')
+            continue
 
         if any(yinit < yit[0:5]) : minit = max(yit[0:5])
         else : minit = yinit
@@ -182,7 +214,6 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
 
         #print i,"/",len(xinif), eqw
 
-    
     np.save(output,eqwidths)
     return eqwidths
 ######################
@@ -298,5 +329,3 @@ def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroi
     
     return sourceRV
 ######################
-
-
