@@ -12,6 +12,7 @@ import numpy as np
 from astropy.io import fits
 import mcallib
 from scipy import constants
+import gzip
 
 ########## SPECTRUM CLASS ############
 class Spectrum :
@@ -42,7 +43,7 @@ class Spectrum :
         
         self.id = basename[0]
         self.filename = os.path.basename(self.filepath)
-
+        
         try :
             if self.filepath.endswith(".fits") :
                 self.wl,self.flux=self.loadSpectrumFromFITS(self.filepath)
@@ -50,6 +51,11 @@ class Spectrum :
                 self.wl,self.flux=self.loadSpectrumFromSPC(self.filepath)
             elif self.filepath.endswith(".txt") :
                 self.wl,self.flux=self.loadSpectrumFromTXT(self.filepath)
+            elif self.filepath.endswith("iu.s.gz") or self.filepath.endswith("iu.s") or \
+                 self.filepath.endswith("in.s.gz") or self.filepath.endswith("in.s") or \
+                 self.filepath.endswith("pu.s.gz") or self.filepath.endswith("pu.s") or \
+                 self.filepath.endswith("pn.s.gz") or self.filepath.endswith("pn.s") :
+                self.wl,self.flux=self.loadSpectrumFromLEfile(self.filepath)
             else :
                 print "Error: file type not supported for input spectrum: ",self.filepath
                 exit()
@@ -132,6 +138,44 @@ class Spectrum :
     def loadSpectrumFromTXT(self,txtfilename):
         x,y = np.loadtxt(txtfilename, unpack=True, comments='#',usecols=(0,1),skiprows=0, delimiter=' ')
         return x,y
+    #------------
+
+    #--- Function to load spectrum from LE file
+    def loadSpectrumFromLEfile(self,filename):
+        
+        self.instrument = 'ESPaDOnS'
+        self.sourceRV = 0.0
+    
+        wl,flux = [],[]
+        
+        if filename.endswith('.gz'):
+            file_obj = gzip.open(filename, 'r')
+        else:
+            file_obj = open(filename, 'r')
+
+        if(os.path.exists(filename)) :
+            nl = 0
+            for line in file_obj :
+                if nl == 0:
+                    cols = line.split("'")
+                    self.object = cols[1].replace(" ", "")
+                    odonumber = self.id[0:-2]
+                    self.sourceRV = mcallib.getSourceRadialVelocity(odonumber=odonumber,targetName=self.object)
+                elif nl > 1:
+                    line = line.replace("  ", " ")
+                    cols = line.split(" ")
+                    wl.append(float(cols[1]))
+                    flux.append(float(cols[2]))
+                
+                nl += 1
+    
+        wl = 10.0*np.array(wl)
+        wl = wl*(1.0 - self.sourceRV*1000.0/constants.c)
+        flux = np.array(flux)
+
+        indices = wl.argsort()
+
+        return wl[indices],flux[indices]
     #------------
 
     #--- Function to load/calculate Equivalent Widths

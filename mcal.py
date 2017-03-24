@@ -29,6 +29,9 @@ import os,sys
 import mcallib
 from spectralclass import Spectrum
 
+import time
+start_time = time.time()
+
 parser = OptionParser()
 parser.add_option("-i", "--datadir", dest="datadir", help="Data directory",type='string',default="")
 parser.add_option("-c", "--calibmatrix", dest="calibmatrix", help="Calibration matrix",type='string',default="coef_calvb12.npz")
@@ -44,10 +47,10 @@ if options.verbose:
     print 'Data directory: ', options.datadir
     print 'Calibration matrix: ', options.calibmatrix
 
-listOfStarSpectra = mcallib.get_fitsfilepaths(options.datadir)
+listOfStarSpectra = mcallib.get_spectrafilepaths(options.datadir)
 
 print "--------------------------------------------------"
-print "File","Object","[Fe/H]","e[Fe/H]","Teff","eTeff","H-alpha", "RV(km/s)"
+print "File","Object","[Fe/H]_corr","[Fe/H]","e[Fe/H]","Teff_corr","Teff","eTeff","H-alpha", "RV(km/s)"
 print "--------------------------------------------------"
 
 for file in listOfStarSpectra :
@@ -55,7 +58,7 @@ for file in listOfStarSpectra :
     spc = Spectrum(file, FFT=options.fft)
     
     if spc.instrument == 'ESPaDOnS' :
-        spc.resampling(0.01,4000,7000)
+        spc.resampling(0.01,4000,10400)
 
     spc.equivalentWidths(override=True,verbose=options.verbose)
 
@@ -66,4 +69,9 @@ for file in listOfStarSpectra :
     #spc.info()
     #spc.printdata()
 
-    print spc.filename, spc.object, round(spc.FeH,3), round(spc.eFeH,3), int(round(spc.Teff,0)), int(round(spc.eTeff,0)), round(spc.halpha,2), round(spc.sourceRV,2)
+    Fe_H_corr=1.2614*spc.FeH-0.0997
+    Teff_corr=0.8286*spc.Teff+957
+
+    print spc.filename, spc.object, round(Fe_H_corr,3), round(spc.FeH,3), round(spc.eFeH,3), int(round(Teff_corr,0)), int(round(spc.Teff,0)), int(round(spc.eTeff,0)), round(spc.halpha,2), round(spc.sourceRV,2)
+
+print("--- Total time: %s seconds ---" % (time.time() - start_time))

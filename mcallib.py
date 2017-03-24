@@ -42,6 +42,41 @@ def get_fitsfilepaths(directory):
     return file_paths
 ######################
 
+######################
+def get_spectrafilepaths(directory):
+    
+    """
+        Generates a list of file names in a directory tree
+        by walking the tree either top-down or bottom-up.
+        
+        Parameters
+        ----------
+        directory : directory path
+        
+        Returns
+        -------
+        file_paths: a list of file paths
+        """
+    
+    file_paths = []  # List which will store all of the full filepaths.
+    
+    for root, directories, files in os.walk(directory):
+        for filename in files:
+            # Merge strings to form full filepaths
+            filepath = os.path.join(root, filename)
+            if filename.endswith(".fits") or filename.endswith(".fits.gz") or \
+                filename.endswith(".spc.gz") or filename.endswith(".txt") or \
+                filename.endswith("iu.s.gz") or filename.endswith("iu.s") or \
+                filename.endswith("in.s.gz") or filename.endswith("in.s") or \
+                filename.endswith("pu.s.gz") or filename.endswith("pu.s") or \
+                filename.endswith("pn.s.gz") or filename.endswith("pn.s"):
+
+                file_paths.append(filepath)
+
+    file_paths.sort()
+    return file_paths
+######################
+
 ############# get basename from FITS file path ###############
 def getbasename(filepath) :
     
@@ -58,6 +93,10 @@ def getbasename(filepath) :
         basename = os.path.splitext(base)[0]
     elif ".spc.gz" in base :
         basename = os.path.splitext(os.path.splitext(base)[0])[0]
+    elif "iu.s.gz" in base or "pu.s.gz" in base or "in.s.gz" in base or "pn.s.gz" in base:
+        basename = os.path.splitext(os.path.splitext(base)[0])[0]
+    elif "iu.s" in base or "pu.s" in base or "in.s" in base or "pn.s" in base:
+        basename = os.path.splitext(base)[0]
     else :
         print "Error: unknown extension in file: ", filepath
         exit()
