@@ -342,7 +342,7 @@ def calculateHalphaActivity(xx,yy) :
 ######################
 
 ##### Function to load Source RV from Coolsnap/Archive datasheet files
-def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroids_log.dat",archivefile="clichesfroids_log_archive.dat") :
+def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroids_log.dat",SSArchivefile="clichesfroids_log_archive.dat",PolarArchivefile="clichesfroids_log_archive_p.dat") :
     sourceRV = 0.0
     try:
         if(os.path.exists(coolsnapfile)) :
@@ -354,8 +354,8 @@ def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroi
                     sourceRV = float(data[19])
             f.close()
         
-        if(os.path.exists(archivefile)) :
-            f = open(archivefile, 'r')
+        if(os.path.exists(SSArchivefile)) :
+            f = open(SSArchivefile, 'r')
             lines = f.readlines()
             for i in range(len(lines)) :
                 data = (lines[i].rstrip('\n')).split(',')
@@ -363,8 +363,17 @@ def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroi
                     sourceRV = float(data[18])
             f.close()
 
+        if(os.path.exists(PolarArchivefile)) :
+            f = open(PolarArchivefile, 'r')
+            lines = f.readlines()
+            for i in range(len(lines)) :
+                data = (lines[i].rstrip('\n')).split(',')
+                if str(data[2]).replace(" ","") == odonumber :
+                    sourceRV = float(data[20])
+            f.close()
+
     except :
-        print 'Error: could not load sourceRV for odonumber=',odonumber,' in Coolsnap/Archive data file:',coolsnapfile, '/', archivefile
+        print 'Error: could not load sourceRV for odonumber=',odonumber,' in Coolsnap/Archive data file:',coolsnapfile, '/', SSArchivefile, '/', PolarArchivefile
     
     return sourceRV
 ######################
