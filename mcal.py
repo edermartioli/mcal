@@ -1,10 +1,4 @@
-#!/opt/anaconda/bin/python
-# -*- coding: iso-8859-1 -*-
 """
-    Shebang options:
-            #!/usr/bin/python
-            #!/opt/anaconda/bin/python
-            #!/Users/edermartioli/Local/Ureka/variants/common/bin/python
     Created on Jan 31 2017
     
     Description: A wrapper to run MCAL V.3 by Vasco Neves
