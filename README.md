@@ -3,4 +3,4 @@ MCAL is a software to perform measurements of the effective temperature (Teff) a
 
 Clone and run:
 
-./mcal.py --datadir=./data/ --calibmatrix=coef_calvb12.npz
+python mcal.py --datadir=./data/ --calibmatrix=coef_calvb12.npz
