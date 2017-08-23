@@ -105,7 +105,7 @@ def getbasename(filepath) :
 ###########################################
 
 ############# get Heliocentric Radial Velocity from header ####
-def getEspaonsHelioRV(header) :
+def getEspadonsHelioRV(header) :
     comments = header['COMMENT']
     rv = 0.0
     for c in comments :
@@ -170,7 +170,6 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
     
     eqwidths = []
 
-
     for i in range(len(xinif)) :
         
         mask = np.where(np.logical_and(xx>=xinif[i], xx<=xendf[i]))
@@ -190,18 +189,21 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
         xendmax = xx[endmaxf-2:endmaxf+3]
         
         """
-        for j in range(len(xmaxloc)) :
-            print i, j, xmaxloc[j], maxloc_adjust[j]
+        if 3760 < i < 3790:
+            
+            for j in range(len(xmaxloc)) :
+                print i, j, xmaxloc[j], maxloc_adjust[j]
 
-        for j in range(len(xendmax)) :
-            print i, j, xendmax[j], endmax_adjust[j]
+            for j in range(len(xendmax)) :
+                print i, j, xendmax[j], endmax_adjust[j]
         """
-        
         locmaxmask = np.where(maxloc_adjust == max(maxloc_adjust))
+        #ind_temp_max = max(find(maxloc_adjust == max(maxloc_adjust)))
         ind_temp_max = locmaxmask[0][0]
         maxlocfs = int(maxlocf + ind_temp_max - 2)
 
         locendmask = np.where(endmax_adjust == max(endmax_adjust))
+        #ind_temp_end = min(find(endmax_adjust == max(endmax_adjust)))
         ind_temp_end = locendmask[0][0]
         endmaxfs = int(endmaxf + ind_temp_end - 2)
         
@@ -231,10 +233,10 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
 
         yintt = yy[maxlocfs:endmaxfs+1]-max(minit,mendt)  #normalizado
         yinttnew = yy[maxlocfs:endmaxfs+1]
-        
-        indini = (minit == yit).argmax()
-        indend = (mendt == yit).argmin()
 
+        indini = max(find (minit == yit))
+        indend = min(find (mendt == yit))
+        
         if (xint[indend]-xint[indini]) != 0.0:
             mt = (mendt-minit)/(xint[indend]-xint[indini])
             
@@ -276,6 +278,7 @@ def mcal(int_ew, calibmatrix) :
     # removing nans from the EW file
     int_ew = nan_to_num(int_ew)
     
+    
     ###loading the calibration matrix and errors
     file_cal = np.load(calibmatrix) ###calibration matrix
     coef = file_cal['coef'] #tellurics exclusion
@@ -296,8 +299,8 @@ def mcal(int_ew, calibmatrix) :
     fit2 = optimize.leastsq (err2,a,args=(xx2fit,yy2fit,zz2fit,z2,e_total),full_output=1)
             
     rss = sum(fit2[2]['fvec']**2)/(z2.size-4)
-    efitfeh = np.sqrt(diag(rss*fit2[1])[2])
-    efitteff = np.sqrt(diag(rss*fit2[1])[3])
+    efitfeh = np.sqrt(np.diag(rss*fit2[1])[2])
+    efitteff = np.sqrt(np.diag(rss*fit2[1])[3])
     coef2 = fit2[0]
 
     feh_fit = coef2[2]
@@ -318,16 +321,16 @@ def calculateHalphaActivity(xx,yy) :
         print "Error: spectrum does not cover H-alpha range! "
         exit()
     
-    x = np.array(xx[mask])
-    y = np.array(yy[mask])
-
-    hlc = (x <= 6562.01).argmax()
-    hrc = (x <= 6563.61).argmin()
-    hl1 = (x <= 6545.495).argmax()
-    hl2 = (x <= 6556.245).argmin()
-    hr1 = (x <= 6575.934).argmax()
-    hr2 = (x <= 6584.684).argmin()
-
+    x = xx[mask]
+    y = yy[mask]
+    
+    hlc = max(find (x <= 6562.01))
+    hrc = min(find (x >= 6563.61))
+    hl1 = max(find (x <= 6545.495))
+    hl2 = min(find (x >= 6556.245))
+    hr1 = max(find (x <= 6575.934))
+    hr2 = min(find (x >= 6584.684))
+    
     ha_core = sum(y[hlc:hrc])
     href1 = sum(y[hl1:hl2])
     href2 = sum(y[hr1:hr2])
