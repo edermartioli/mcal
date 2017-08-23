@@ -296,8 +296,8 @@ def mcal(int_ew, calibmatrix) :
     fit2 = optimize.leastsq (err2,a,args=(xx2fit,yy2fit,zz2fit,z2,e_total),full_output=1)
             
     rss = sum(fit2[2]['fvec']**2)/(z2.size-4)
-    efitfeh = sqrt(diag(rss*fit2[1])[2])
-    efitteff = sqrt(diag(rss*fit2[1])[3])
+    efitfeh = np.sqrt(diag(rss*fit2[1])[2])
+    efitteff = np.sqrt(diag(rss*fit2[1])[3])
     coef2 = fit2[0]
 
     feh_fit = coef2[2]
