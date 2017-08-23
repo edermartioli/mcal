@@ -198,12 +198,10 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
         """
         
         locmaxmask = np.where(maxloc_adjust == max(maxloc_adjust))
-        #ind_temp_max = max(find(maxloc_adjust == max(maxloc_adjust)))
         ind_temp_max = locmaxmask[0][0]
         maxlocfs = int(maxlocf + ind_temp_max - 2)
 
         locendmask = np.where(endmax_adjust == max(endmax_adjust))
-        #ind_temp_end = min(find(endmax_adjust == max(endmax_adjust)))
         ind_temp_end = locendmask[0][0]
         endmaxfs = int(endmaxf + ind_temp_end - 2)
         
@@ -233,10 +231,10 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
 
         yintt = yy[maxlocfs:endmaxfs+1]-max(minit,mendt)  #normalizado
         yinttnew = yy[maxlocfs:endmaxfs+1]
-
-        indini = max(find (minit == yit))
-        indend = min(find (mendt == yit))
         
+        indini = (minit == yit).argmax()
+        indend = (mendt == yit).argmin()
+
         if (xint[indend]-xint[indini]) != 0.0:
             mt = (mendt-minit)/(xint[indend]-xint[indini])
             
@@ -320,16 +318,16 @@ def calculateHalphaActivity(xx,yy) :
         print "Error: spectrum does not cover H-alpha range! "
         exit()
     
-    x = xx[mask]
-    y = yy[mask]
-    
-    hlc = max(find (x <= 6562.01))
-    hrc = min(find (x >= 6563.61))
-    hl1 = max(find (x <= 6545.495))
-    hl2 = min(find (x >= 6556.245))
-    hr1 = max(find (x <= 6575.934))
-    hr2 = min(find (x >= 6584.684))
-    
+    x = np.array(xx[mask])
+    y = np.array(yy[mask])
+
+    hlc = (x <= 6562.01).argmax()
+    hrc = (x <= 6563.61).argmin()
+    hl1 = (x <= 6545.495).argmax()
+    hl2 = (x <= 6556.245).argmin()
+    hr1 = (x <= 6575.934).argmax()
+    hr2 = (x <= 6584.684).argmin()
+
     ha_core = sum(y[hlc:hrc])
     href1 = sum(y[hl1:hl2])
     href2 = sum(y[hr1:hr2])
