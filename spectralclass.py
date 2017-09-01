@@ -181,7 +181,7 @@ class Spectrum :
     #--- Function to load/calculate Equivalent Widths
     def equivalentWidths(self, inputlinelist='lines.rdb', output=True, override=False, verbose=False) :
         try :
-            if os.path.exists(self.eqw_output) and override == False :
+            if os.path.exists(self.eqw_output) and override is False :
                 if verbose: print "Loading EWs from existing file: ",self.eqw_output
                 self.eqwidths = np.load(self.eqw_output)
             else :
@@ -202,7 +202,7 @@ class Spectrum :
             exit()
     #------------
 
-    #--- Print spectrum data
+    #--- Resample spectrum
     def resampling(self, wlsampling, wl0, wlf) :
         npoints = int((wlf-wl0)/wlsampling)
         wl_new = np.linspace(wl0, wlf, npoints)
@@ -210,6 +210,40 @@ class Spectrum :
         self.wl = wl_new
         self.flux = flux_new
     #------------
+    
+    #--- bin spectrum
+    def binning(self, rvsampling_kps, wl0=0.0, wlf=0.0, median=False) :
+        if wl0 == 0.0:
+            wl0 = self.wl[0]
+        if wlf == 0.0:
+            wlf = self.wl[-1]
+                
+        bins = []
+        wl = wl0
+        while wl <= wlf :
+            bins.append(wl)
+            wl *= (1.0 + rvsampling_kps*1000/constants.c)
+        bins = np.array(bins)
+        
+        digitized = np.digitize(self.wl, bins)
+        
+        wl_new = []
+        flux_new = []
+
+        for i in range(1, len(bins)):
+            if len(self.wl[digitized == i]) :
+                try:
+                    wl_new.append(self.wl[digitized == i].mean())
+                    if median :
+                        flux_new.append(np.median(self.flux[digitized == i]))
+                    else :
+                        flux_new.append(self.flux[digitized == i].mean())
+                except :
+                    continue
+
+        self.wl = np.array(wl_new)
+        self.flux = np.array(flux_new)
+    #--------------------------
 
     #--- Print spectrum information
     def info(self) :
@@ -235,7 +269,7 @@ class Spectrum :
             print self.wl[i],self.flux[i]
     #------------
 
-    #--- Check activity
+    #--- Calculate H-alpha activity
     def halphaActivity(self, verbose=False) :
         if verbose: print 'Calculating Halpha activity index...'
 

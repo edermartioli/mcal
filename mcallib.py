@@ -8,7 +8,7 @@ Laboratorio Nacional de Astrofisica, Brazil
 
 import os
 import numpy as np
-from pylab import *
+from matplotlib import pylab
 from scipy import optimize
 from scipy import integrate
 
@@ -198,12 +198,10 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
                 print i, j, xendmax[j], endmax_adjust[j]
         """
         locmaxmask = np.where(maxloc_adjust == max(maxloc_adjust))
-        #ind_temp_max = max(find(maxloc_adjust == max(maxloc_adjust)))
         ind_temp_max = locmaxmask[0][0]
         maxlocfs = int(maxlocf + ind_temp_max - 2)
 
         locendmask = np.where(endmax_adjust == max(endmax_adjust))
-        #ind_temp_end = min(find(endmax_adjust == max(endmax_adjust)))
         ind_temp_end = locendmask[0][0]
         endmaxfs = int(endmaxf + ind_temp_end - 2)
         
@@ -234,8 +232,8 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
         yintt = yy[maxlocfs:endmaxfs+1]-max(minit,mendt)  #normalizado
         yinttnew = yy[maxlocfs:endmaxfs+1]
 
-        indini = max(find (minit == yit))
-        indend = min(find (mendt == yit))
+        indini = max(pylab.find (minit == yit))
+        indend = min(pylab.find (mendt == yit))
         
         if (xint[indend]-xint[indini]) != 0.0:
             mt = (mendt-minit)/(xint[indend]-xint[indini])
@@ -276,8 +274,7 @@ def mcal(int_ew, calibmatrix) :
         """
 
     # removing nans from the EW file
-    int_ew = nan_to_num(int_ew)
-    
+    int_ew = np.nan_to_num(int_ew)
     
     ###loading the calibration matrix and errors
     file_cal = np.load(calibmatrix) ###calibration matrix
@@ -285,16 +282,16 @@ def mcal(int_ew, calibmatrix) :
     e_total = file_cal['e_total'] #tellurics exclusion
     
     ####2nd part of the calibration: refit with weights
-    z2 = int_ew
+    z2 = int_ew  #eq. widths
     
     fun2 = lambda a,xx2,yy2,zz2 : a[0] + a[1]*xx2 + a[2]*yy2 + a[3]*zz2
     err2 = lambda a,xx2,yy2,zz2,z2,erro : (z2 - fun2(a,xx2,yy2,zz2))*((1/erro**2)/(sum(1/erro**2)))
     
-    xx2fit = coef[:,0]
-    yy2fit = coef[:,1]
-    zz2fit = coef[:,2]
+    xx2fit = coef[:,0] #alpha
+    yy2fit = coef[:,1] #beta
+    zz2fit = coef[:,2] #gamma
     
-    a = array([0,0,0,3500])
+    a = np.array([0,0,0,3500]) #initial guess
     
     fit2 = optimize.leastsq (err2,a,args=(xx2fit,yy2fit,zz2fit,z2,e_total),full_output=1)
             
@@ -324,12 +321,12 @@ def calculateHalphaActivity(xx,yy) :
     x = xx[mask]
     y = yy[mask]
     
-    hlc = max(find (x <= 6562.01))
-    hrc = min(find (x >= 6563.61))
-    hl1 = max(find (x <= 6545.495))
-    hl2 = min(find (x >= 6556.245))
-    hr1 = max(find (x <= 6575.934))
-    hr2 = min(find (x >= 6584.684))
+    hlc = max(pylab.find (x <= 6562.01))
+    hrc = min(pylab.find (x >= 6563.61))
+    hl1 = max(pylab.find (x <= 6545.495))
+    hl2 = min(pylab.find (x >= 6556.245))
+    hr1 = max(pylab.find (x <= 6575.934))
+    hr2 = min(pylab.find (x >= 6584.684))
     
     ha_core = sum(y[hlc:hrc])
     href1 = sum(y[hl1:hl2])
@@ -377,4 +374,23 @@ def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroi
         print 'Error: could not load sourceRV for odonumber=',odonumber,' in Coolsnap/Archive data file:',coolsnapfile, '/', SSArchivefile, '/', PolarArchivefile
     
     return sourceRV
+######################
+
+##### Function to load input file containing sample of calibrators
+def loadSampleOfCalibrators(input) :
+    try:
+        twomassid, id, teff, feh = [],[],[],[]
+        f = open(input, 'r')
+        lines = f.readlines()
+        for i in range(len(lines)) :
+            data = (lines[i].rstrip('\n')).split(' ')
+            twomassid.append(data[0])
+            id.append(data[1])
+            teff.append(float(data[2]))
+            feh.append(float(data[3]))
+        f.close()
+        return twomassid, id, teff, feh
+    except :
+        print 'Error: could not load file of sample of calibrators=',input
+        exit()
 ######################
