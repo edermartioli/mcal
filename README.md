@@ -7,4 +7,6 @@ python mcal.py --datadir=./data/ --calibmatrix=coef_calvb12.npz
 
 To recalibrate MCAL:
 
-python calibrate-mcal.py --inputsample=calibrators_db.dat --datadir=./calibsample/ --outputcalibmatrix=coefcal.npz
+python calibrate-mcal.py --inputsample=calibrators_db.dat --datadir=$PATH/calibsample/ --outputcalibmatrix=coefcal.npz
+
+where $PATH/calibsample/ is the path to the directory containing all calibrator's spectra, and the file calibrators_db.dat contains the calibrator's information, such as the reference values of Teff and [Fe/H].
