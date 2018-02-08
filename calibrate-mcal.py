@@ -23,8 +23,9 @@ import os,sys
 import mcallib
 from spectralclass import Spectrum
 import numpy as np
+from scipy import optimize
 
-from sklearn import linear_model
+#import matplotlib.pyplot as plt
 
 import time
 start_time = time.time()
@@ -66,9 +67,8 @@ for file in listOfStarSpectra :
 
     for i in range(len(id)) :
         if objname in id[i] or objname in twomassid[i]:
-            spc.equivalentWidths(override=True)
-            
-            ewcal_tmp = np.load(spc.eqw_output)
+            spc.equivalentWidths(override=False, verbose=options.verbose)
+            ewcal_tmp = spc.eqwidths
             if not np.any(np.isnan(ewcal_tmp)) :
                 ewcal.append(ewcal_tmp)
                 Tcal.append(teff[i])
@@ -77,22 +77,6 @@ for file in listOfStarSpectra :
             else :
                 print "Eq. Widths contain NaNs. Ignoring potential calibrator: ", file, objname
 
-x = np.matrix(ewcal)
-
-#np.save("xmatrix.npy",x)
-
-y = np.matrix([Tcal,FeHcal])
-yT = y.getT()
-
-#np.save("ymatrix.npy",yT)
-
-ols = linear_model.LinearRegression()
-
-model = ols.fit(x,yT)
-
-coeffs = model.coef_
-e_total = coeffs
-
-np.savez(options.outputcalibmatrix,coef=coeffs,e_total=e_total)
+mcallib.calibrate_mcal(ewcal, Tcal, FeHcal, options.outputcalibmatrix)
 
 print("--- Total time: %s seconds ---" % (time.time() - start_time))

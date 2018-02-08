@@ -283,18 +283,18 @@ def mcal(int_ew, calibmatrix) :
     
     ####2nd part of the calibration: refit with weights
     z2 = int_ew  #eq. widths
-    
+
     fun2 = lambda a,xx2,yy2,zz2 : a[0] + a[1]*xx2 + a[2]*yy2 + a[3]*zz2
     err2 = lambda a,xx2,yy2,zz2,z2,erro : (z2 - fun2(a,xx2,yy2,zz2))*((1/erro**2)/(sum(1/erro**2)))
-    
+
     xx2fit = coef[:,0] #alpha
     yy2fit = coef[:,1] #beta
     zz2fit = coef[:,2] #gamma
-    
+
     a = np.array([0,0,0,3500]) #initial guess
-    
+
     fit2 = optimize.leastsq (err2,a,args=(xx2fit,yy2fit,zz2fit,z2,e_total),full_output=1)
-            
+
     rss = sum(fit2[2]['fvec']**2)/(z2.size-4)
     efitfeh = np.sqrt(np.diag(rss*fit2[1])[2])
     efitteff = np.sqrt(np.diag(rss*fit2[1])[3])
@@ -302,8 +302,73 @@ def mcal(int_ew, calibmatrix) :
 
     feh_fit = coef2[2]
     teff_fit = coef2[3]
-    
+
     return (feh_fit,efitfeh),(teff_fit,efitteff)
+######################
+
+############# Function to calculate the calibration matrix for mcal  ###############
+def calibrate_mcal(ewcal, Tcal, FeHcal, outputcalibmatrix) :
+    
+    """
+        Function to calculate the calibration matrix for MCAL
+        
+        Parameters
+        ----------
+        ewcal : array of peak to peak equivalent widths measured on the calibration sample (without NaNs)
+        Tcal : array of Effective Temperature (Teff) values for the calibration sample
+        FeHcal : array of Metalliticity ([Fe/H]) values for the calibration sample
+        outputcalibmatrix : output calibration matrix (n x N), where n=number of
+        coefficients and N=number of lines/features used in the fit
+        
+        Returns
+        -------
+        """
+    
+    icor = []
+    #corr,corrt = [],[]
+    
+    for i in range(len(ewcal[0])) :
+        
+        icor_t = []
+        
+        for j in range(len(ewcal)) : icor_t.append(ewcal[j][i])
+        
+        icor.append(icor_t)
+    
+        #corr.append(np.corrcoef(FeHcal,icor[i])[0][1])
+        #corrt.append(np.corrcoef(Tcal,icor[i])[0][1])
+    
+    fun = lambda a,x,y : a[0] + a[1]*x + a[2]*y
+    err = lambda a,x,y,z : (z - fun(a,x,y))
+
+    a = np.array([0,0,0])
+    
+    xx = np.array(FeHcal)
+    yy = np.array(Tcal)
+    z = np.array(icor)
+    
+    coeffs, e_total = [],[]
+    ncoef = 3
+    
+    if z[i].size < ncoef :
+        print "Number of calibration stars (", z[i].size,") must be greater than the number of coefficients (",ncoef,")"
+        exit()
+
+    for i in range(len(icor)) :
+        
+        fit = optimize.leastsq(err,a,args=(xx,yy,z[i]),full_output=1)
+        
+        rss = np.sum(fit[2]['fvec']**2)/(z[i].size - ncoef)
+        
+        efit_coef1 = np.sqrt(np.diag(rss*fit[1])[0])
+        efit_coef2 = np.sqrt(np.diag(rss*fit[1])[1])
+        efit_coef3 = np.sqrt(np.diag(rss*fit[1])[2])
+        
+        e_total.append(np.sqrt(efit_coef1**2 + efit_coef2**2 + efit_coef3**2))
+        
+        coeffs.append(fit[0])
+
+    np.savez(outputcalibmatrix,coef=coeffs,e_total=e_total)
 ######################
 
 ##### CALCULATE corrected Halpha to obtain a measure of activity ############

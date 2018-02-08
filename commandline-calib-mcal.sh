@@ -1,1 +1,1 @@
-python calibrate-mcal.py --inputsample=calibrators_db.dat --datadir=./datadir/ --outputcalibmatrix=./coefcal.npz
+python calibrate-mcal.py --inputsample=calibrators_db.dat --datadir=./calibsample/ --outputcalibmatrix=./coefcal.npz
