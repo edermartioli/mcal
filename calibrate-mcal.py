@@ -57,7 +57,7 @@ ewcal = []
 for file in listOfStarSpectra :
 
     spc = Spectrum(file)
-    objname = spc.object.replace(" ","").replace("_","")
+    objname = spc.object.replace(" ","").upper()
 
     if options.verbose :
         print "Processing spectrum: ", file, objname
@@ -66,7 +66,7 @@ for file in listOfStarSpectra :
         spc.resampling(0.01,4000,10400)
 
     for i in range(len(id)) :
-        if objname in id[i] or objname in twomassid[i]:
+        if objname in id[i].upper() or objname in twomassid[i].upper():
             spc.equivalentWidths(override=False, verbose=options.verbose)
             ewcal_tmp = spc.eqwidths
             if not np.any(np.isnan(ewcal_tmp)) :
