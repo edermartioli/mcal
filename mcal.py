@@ -49,9 +49,14 @@ print "--------------------------------------------------"
 
 for file in listOfStarSpectra :
 
+    if options.verbose :
+        print "Processing spectrum: ", file
+
     spc = Spectrum(file, FFT=options.fft)
-    
+
     if spc.instrument == 'ESPaDOnS' :
+        spc.resampling(0.01,4000,10400)
+    elif spc.instrument == 'NARVAL' :
         spc.resampling(0.01,4000,10400)
 
     spc.equivalentWidths(override=True,verbose=options.verbose)
@@ -63,8 +68,7 @@ for file in listOfStarSpectra :
     #spc.info()
     #spc.printdata()
 
-    Fe_H_corr=1.2614*spc.FeH-0.0997
-    Teff_corr=0.8286*spc.Teff+957
+    Teff_corr, Fe_H_corr = spc.TeffAndFeHCorr()
 
     print spc.filename, spc.object, round(Fe_H_corr,3), round(spc.FeH,3), round(spc.eFeH,3), int(round(Teff_corr,0)), int(round(spc.Teff,0)), int(round(spc.eTeff,0)), round(spc.halpha,2), round(spc.sourceRV,2)
 

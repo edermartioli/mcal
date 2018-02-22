@@ -35,7 +35,8 @@ class Spectrum :
         >>> spc = Spectrum("spectrumfile.txt")
         """
         self.sourceRV = 0.0
-        
+        self.sourceSNR = 0.0
+
         self.filepath = Filename
         
         basename = mcallib.getbasename(self.filepath)
@@ -104,8 +105,8 @@ class Spectrum :
                 self.object = hdu[0].header['OBJECT']
 
                 odonumber = self.id[0:-1]
-                self.sourceRV = mcallib.getSourceRadialVelocity(odonumber=odonumber,targetName=self.object)
-                
+                self.sourceRV,self.sourceSNR = mcallib.getSourceRadialVelocity(odonumber=odonumber,targetName=self.object)
+
                 if hdu[0].header['INSTMODE'] == 'Polarimetry, R=65,000' :
                     # data[0],data[1] for normalized spectrum
                     # data[6],data[7] for unnormalized spectrum
@@ -121,6 +122,18 @@ class Spectrum :
                     indices = wltmp.argsort()
                     wl = 10.0*wltmp[indices]
                     flux = (hdu[0].data[1])[indices]
+    
+            elif hdu[0].header['INSTRUME'] == 'NARVAL-POL' :
+        
+                self.instrument = 'NARVAL'
+                self.object = hdu[0].header['OBJECT']
+                
+                odonumber = self.id[0:-1]
+                self.sourceRV,self.sourceSNR = mcallib.getSourceRadialVelocity(odonumber=odonumber,targetName=self.object)
+                wltmp = hdu[0].data[0]*(1.0 - self.sourceRV*1000.0/constants.c)
+                indices = wltmp.argsort()
+                wl = 10.0*wltmp[indices]
+                flux = (hdu[0].data[1])[indices]
 
         except :
             self.object = (self.id).rsplit('_')[0]
@@ -160,7 +173,7 @@ class Spectrum :
                     cols = line.split("'")
                     self.object = cols[1].replace(" ", "")
                     odonumber = self.id[0:-2]
-                    self.sourceRV = mcallib.getSourceRadialVelocity(odonumber=odonumber,targetName=self.object)
+                    self.sourceRV,self.sourceSNR = mcallib.getSourceRadialVelocity(odonumber=odonumber,targetName=self.object)
                 elif nl > 1:
                     line = line.replace("  ", " ")
                     cols = line.split(" ")
@@ -187,7 +200,14 @@ class Spectrum :
             else :
                 if verbose: print "Calculating EWs from spectrum using list of lines: ",inputlinelist
                 self.eqwidths = mcallib.measureEquivalentWidths(self.wl, self.flux, inputlinelist, self.eqw_output)
-        except:
+
+            # Below it calculates the median equivalent width
+            median_eqwidth = np.median(np.nan_to_num(self.eqwidths))
+
+            # Below it replaces all NaNs by the median EW
+            self.eqwidths[np.where(np.isnan(self.eqwidths))] = median_eqwidth
+
+        except :
             print "Error: could not calculate Eq Widths. Input line list:",inputlinelist
             exit()
     #------------
@@ -282,3 +302,28 @@ class Spectrum :
                 print 'No significant Halpha emission'
     #------------
 
+    #--- Calculate Teff and [Fe/H] correction based on SNR
+    def TeffAndFeHCorr(self, verbose=False) :
+        if verbose: print 'Calculating Teff and [Fe/H] correction ...'
+        
+        # Switch according to SNR; resolution is fixed at 65000
+        SNR = self.sourceSNR
+    
+        self.Fe_H_corr=1.2614*self.FeH-0.0997
+        self.Teff_corr=0.8286*self.Teff+957
+    
+        if SNR < 30:
+            self.Fe_H_corr=1.3743*self.FeH-0.1880
+            self.Teff_corr=0.8567*self.Teff+713
+        elif 30 <= SNR < 50:
+            self.Fe_H_corr=1.3072*self.FeH-0.1315
+            self.Teff_corr=0.8257*self.Teff+915
+        elif 50 <= SNR < 70:
+            self.Fe_H_corr=1.2849*self.FeH-0.1149
+            self.Teff_corr=0.8354*self.Teff+917
+        elif 70 <= SNR < 90:
+            self.Fe_H_corr=1.2739*self.FeH-0.1075
+            self.Teff_corr=0.8277*self.Teff+953
+
+        return self.Teff_corr, self.Fe_H_corr
+    #------------

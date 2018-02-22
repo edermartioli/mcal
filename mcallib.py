@@ -251,6 +251,7 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
 
         #print i,"/",len(xinif), eqw
 
+    eqwidths = np.array(eqwidths)
     np.save(output,eqwidths)
     return eqwidths
 ######################
@@ -368,6 +369,8 @@ def calibrate_mcal(ewcal, Tcal, FeHcal, outputcalibmatrix) :
         
         coeffs.append(fit[0])
 
+    coeffs = np.array(coeffs)
+    e_total = np.array(e_total)
     np.savez(outputcalibmatrix,coef=coeffs,e_total=e_total)
 ######################
 
@@ -405,8 +408,9 @@ def calculateHalphaActivity(xx,yy) :
 ######################
 
 ##### Function to load Source RV from Coolsnap/Archive datasheet files
-def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroids_log.dat",SSArchivefile="clichesfroids_log_archive.dat",PolarArchivefile="clichesfroids_log_archive_p.dat") :
+def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroids_log.dat",SSArchivefile="clichesfroids_log_archive.dat",PolarArchivefile="clichesfroids_log_archive_p.dat",CSPolFupfile="clichesfroids_log_coolsnap_foll.dat",CSSpSFupfile="clichesfroids_log_coolsnap_foll_i.dat") :
     sourceRV = 0.0
+    
     try:
         if(os.path.exists(coolsnapfile)) :
             f = open(coolsnapfile, 'r')
@@ -415,6 +419,7 @@ def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroi
                 data = (lines[i].rstrip('\n')).split(',')
                 if str(data[2]).replace(" ","") == odonumber :
                     sourceRV = float(data[19])
+                    sourceSNR = float(data[11])
             f.close()
         
         if(os.path.exists(SSArchivefile)) :
@@ -424,8 +429,9 @@ def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroi
                 data = (lines[i].rstrip('\n')).split(',')
                 if str(data[1]).replace(" ","") == odonumber :
                     sourceRV = float(data[18])
+                    sourceSNR = float(data[11])
             f.close()
-
+        
         if(os.path.exists(PolarArchivefile)) :
             f = open(PolarArchivefile, 'r')
             lines = f.readlines()
@@ -433,12 +439,34 @@ def getSourceRadialVelocity(odonumber="",targetName="",coolsnapfile="clichesfroi
                 data = (lines[i].rstrip('\n')).split(',')
                 if str(data[2]).replace(" ","") == odonumber :
                     sourceRV = float(data[20])
+                    sourceSNR = float(data[11])
+            f.close()
+        
+        if(os.path.exists(CSPolFupfile)) :
+            f = open(CSPolFupfile, 'r')
+            lines = f.readlines()
+            for i in range(len(lines)) :
+                data = (lines[i].rstrip('\n')).split(',')
+                if str(data[2]).replace(" ","") == odonumber :
+                    sourceRV = float(data[20])
+                    #sourceSNR = float(data[11]) for ESPaDOnS
+                    sourceSNR = float(data[12])
+            f.close()
+        
+        if(os.path.exists(CSSpSFupfile)) :
+            f = open(CSSpSFupfile, 'r')
+            lines = f.readlines()
+            for i in range(len(lines)) :
+                data = (lines[i].rstrip('\n')).split(',')
+                if str(data[1]).replace(" ","") == odonumber :
+                    sourceRV = float(data[18])
+                    sourceSNR = float(data[11])
             f.close()
 
     except :
-        print 'Error: could not load sourceRV for odonumber=',odonumber,' in Coolsnap/Archive data file:',coolsnapfile, '/', SSArchivefile, '/', PolarArchivefile
+        print 'Error: could not load sourceRV for odonumber=',odonumber,' in Coolsnap/Archive data file:',coolsnapfile, '/', SSArchivefile, '/', PolarArchivefile, '/', CSPolFupfile, '/', CSSpSFupfile
     
-    return sourceRV
+    return sourceRV,sourceSNR
 ######################
 
 ##### Function to load input file containing sample of calibrators
