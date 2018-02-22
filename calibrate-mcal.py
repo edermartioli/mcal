@@ -62,7 +62,7 @@ for file in listOfStarSpectra :
     if options.verbose :
         print "Processing spectrum: ", file, objname
     
-    if spc.instrument == 'ESPaDOnS' :
+    if spc.instrument == 'ESPaDOnS' or spc.instrument == 'NARVAL' :
         spc.resampling(0.01,4000,10400)
 
     for i in range(len(id)) :
