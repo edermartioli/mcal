@@ -257,14 +257,14 @@ def measureEquivalentWidths(xx, yy, inputlinelist='lines.rdb', output = 'ew_out.
 ######################
 
 ############# Function to calculate Teff and [Fe/H]  ###############
-def mcal(int_ew, calibmatrix) :
+def mcal(eqw, calibmatrix) :
     
     """
         Calculate Effective Temperature (Teff) and Metallicity ([Fe/H])
         
         Parameters
         ----------
-        int_ew : array of peak to peak equivalent widths
+        eqw : array of peak to peak equivalent widths
         calibmatrix : calibration matrix (n x N), where n=number of
                       coefficients and N=number of lines/features used 
                       in the fit
@@ -273,38 +273,57 @@ def mcal(int_ew, calibmatrix) :
         -------
         feh_fit,teff_fit: tuple containing the calcualted [Fe/H] and Teff
         """
-
-    # removing nans from the EW file
-    int_ew = np.nan_to_num(int_ew)
     
-    ###loading the calibration matrix and errors
+    ### loading the calibration matrix and errors
     file_cal = np.load(calibmatrix) ###calibration matrix
     coef = file_cal['coef'] #tellurics exclusion
     e_total = file_cal['e_total'] #tellurics exclusion
     
-    ####2nd part of the calibration: refit with weights
-    z2 = int_ew  #eq. widths
+    #### Refit with weights
+    ncoef = 4
 
-    fun2 = lambda a,xx2,yy2,zz2 : a[0] + a[1]*xx2 + a[2]*yy2 + a[3]*zz2
-    err2 = lambda a,xx2,yy2,zz2,z2,erro : (z2 - fun2(a,xx2,yy2,zz2))*((1/erro**2)/(sum(1/erro**2)))
+    fun = lambda a,x,y,z : a[0] + a[1]*x + a[2]*y + a[3]*z
+    err = lambda a,x,y,z,w,erro : (w - fun(a,x,y,z))*((1/erro**2)/(sum(1/erro**2)))
 
-    xx2fit = coef[:,0] #alpha
-    yy2fit = coef[:,1] #beta
-    zz2fit = coef[:,2] #gamma
+    xfit = coef[:,0] #alpha
+    yfit = coef[:,1] #beta
+    zfit = coef[:,2] #gamma
 
     a = np.array([0,0,0,3500]) #initial guess
 
-    fit2 = optimize.leastsq (err2,a,args=(xx2fit,yy2fit,zz2fit,z2,e_total),full_output=1)
+    fit = optimize.leastsq (err,a,args=(xfit,yfit,zfit,eqw,e_total),full_output=1)
 
-    rss = sum(fit2[2]['fvec']**2)/(z2.size-4)
-    efitfeh = np.sqrt(np.diag(rss*fit2[1])[2])
-    efitteff = np.sqrt(np.diag(rss*fit2[1])[3])
-    coef2 = fit2[0]
+    rss = sum(fit[2]['fvec']**2)/(eqw.size - ncoef)
+    efitfeh = np.sqrt(np.diag(rss*fit[1])[2])
+    efitteff = np.sqrt(np.diag(rss*fit[1])[3])
 
-    feh_fit = coef2[2]
-    teff_fit = coef2[3]
+    coef = fit[0]
+    feh_fit = coef[2]
+    teff_fit = coef[3]
 
     return (feh_fit,efitfeh),(teff_fit,efitteff)
+######################
+
+############# Function to calculate the error from a fit  ###############
+def fit_err(fit, z, ncoef) :
+    """
+        Function to calculate the error from a fit
+        
+        Parameters
+        ----------
+        fit: fit object returned from optimize.leastsq()
+        z: data used in the fit
+        ncoef: number of coefficients used in the fit
+        
+        Returns error
+        -------
+        """
+    rss = sum(fit[2]['fvec']**2)/(z[0].size - ncoef)
+    efit_coef_sum = 0.0
+    for j in range(ncoef) :
+        efit_coef = np.sqrt(np.diag(rss*fit[1])[j])
+        efit_coef_sum += efit_coef**2
+    return np.sqrt(efit_coef_sum)
 ######################
 
 ############# Function to calculate the calibration matrix for mcal  ###############
@@ -315,29 +334,16 @@ def calibrate_mcal(ewcal, Tcal, FeHcal, outputcalibmatrix) :
         
         Parameters
         ----------
-        ewcal : array of peak to peak equivalent widths measured on the calibration sample (without NaNs)
-        Tcal : array of Effective Temperature (Teff) values for the calibration sample
-        FeHcal : array of Metalliticity ([Fe/H]) values for the calibration sample
-        outputcalibmatrix : output calibration matrix (n x N), where n=number of
-        coefficients and N=number of lines/features used in the fit
+        ewcal: array (N x 1) of peak to peak equivalent widths measured on the calibration sample (without NaNs)
+        Tcal: array (Ns x 1)of Effective Temperature (Teff) values for the calibration sample
+        FeHcal: array (Ns x 1) of Metalliticity ([Fe/H]) values for the calibration sample
+        outputcalibmatrix: output calibration matrix (dimension n x N), where n=number of coefficients and N=number of lines/features used in the fit
         
         Returns
         -------
         """
     
-    icor = []
-    #corr,corrt = [],[]
-    
-    for i in range(len(ewcal[0])) :
-        
-        icor_t = []
-        
-        for j in range(len(ewcal)) : icor_t.append(ewcal[j][i])
-        
-        icor.append(icor_t)
-    
-        #corr.append(np.corrcoef(FeHcal,icor[i])[0][1])
-        #corrt.append(np.corrcoef(Tcal,icor[i])[0][1])
+    ewcal = np.array(ewcal)
     
     fun = lambda a,x,y : a[0] + a[1]*x + a[2]*y
     err = lambda a,x,y,z : (z - fun(a,x,y))
@@ -346,27 +352,18 @@ def calibrate_mcal(ewcal, Tcal, FeHcal, outputcalibmatrix) :
     
     xx = np.array(FeHcal)
     yy = np.array(Tcal)
-    z = np.array(icor)
+    z = ewcal.transpose()
     
     coeffs, e_total = [],[]
     ncoef = 3
     
-    if z[i].size < ncoef :
-        print "Number of calibration stars (", z[i].size,") must be greater than the number of coefficients (",ncoef,")"
+    if z[0].size < ncoef :
+        print "Number of calibration stars (", z[0].size,") must be greater than the number of coefficients (",ncoef,")"
         exit()
 
-    for i in range(len(icor)) :
-        
+    for i in range(len(z)) :
         fit = optimize.leastsq(err,a,args=(xx,yy,z[i]),full_output=1)
-        
-        rss = np.sum(fit[2]['fvec']**2)/(z[i].size - ncoef)
-        
-        efit_coef1 = np.sqrt(np.diag(rss*fit[1])[0])
-        efit_coef2 = np.sqrt(np.diag(rss*fit[1])[1])
-        efit_coef3 = np.sqrt(np.diag(rss*fit[1])[2])
-        
-        e_total.append(np.sqrt(efit_coef1**2 + efit_coef2**2 + efit_coef3**2))
-        
+        e_total.append(fit_err(fit,z,ncoef))
         coeffs.append(fit[0])
 
     coeffs = np.array(coeffs)
