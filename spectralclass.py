@@ -297,7 +297,7 @@ class Spectrum :
         
         if verbose :
             if self.halpha >= 0.25 :
-                print 'WARNING: the star may be too active to use this calibration. Halpha =',self.halpha,'. Check the webpage or Neves (2014) for more details.'
+                print 'WARNING: the star may be too active to use this calibration. Halpha =',self.halpha,''
             else :
                 print 'No significant Halpha emission'
     #------------
@@ -309,21 +309,27 @@ class Spectrum :
         # Switch according to SNR; resolution is fixed at 65000
         SNR = self.sourceSNR
     
-        self.Fe_H_corr=1.2614*self.FeH-0.0997
-        self.Teff_corr=0.8286*self.Teff+957
+#        self.Fe_H_corr=1.2614*self.FeH-0.0997
+#        self.Teff_corr=0.8286*self.Teff+957
+        self.Fe_H_corr=self.FeH
+        self.Teff_corr=self.Teff
     
-        if SNR < 30:
-            self.Fe_H_corr=1.3743*self.FeH-0.1880
-            self.Teff_corr=0.8567*self.Teff+713
-        elif 30 <= SNR < 50:
-            self.Fe_H_corr=1.3072*self.FeH-0.1315
-            self.Teff_corr=0.8257*self.Teff+915
-        elif 50 <= SNR < 70:
-            self.Fe_H_corr=1.2849*self.FeH-0.1149
-            self.Teff_corr=0.8354*self.Teff+917
-        elif 70 <= SNR < 90:
-            self.Fe_H_corr=1.2739*self.FeH-0.1075
-            self.Teff_corr=0.8277*self.Teff+953
+#        if SNR < 30:
+#            self.Fe_H_corr=1.3743*self.FeH-0.1880
+#            self.Teff_corr=0.8567*self.Teff+713
+#        elif 30 <= SNR < 50:
+#            self.Fe_H_corr=1.3072*self.FeH-0.1315
+#            self.Teff_corr=0.8257*self.Teff+915
+#        elif 50 <= SNR < 70:
+#            self.Fe_H_corr=1.2849*self.FeH-0.1149
+#            self.Teff_corr=0.8354*self.Teff+917
+#        elif 70 <= SNR < 90:
+#            self.Fe_H_corr=1.2739*self.FeH-0.1075
+#            self.Teff_corr=0.8277*self.Teff+953
+
+        if SNR < 100:
+            self.Fe_H_corr=self.FeH-(6.1793e-6*np.power(SNR,3)-1.18732e-3*np.square(SNR)+0.0683364*SNR-1.047238)
+            self.Teff_corr=self.Teff-(-0.011468*np.power(SNR,3)+2.50713*np.square(SNR)-188.512*SNR+5242.187)
 
         return self.Teff_corr, self.Fe_H_corr
     #------------
